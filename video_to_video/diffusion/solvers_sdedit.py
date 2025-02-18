@@ -161,7 +161,9 @@ def sample_dpmpp_2m_sde(noise,
     old_denoised = None
     h_last = None
 
+    # TODO: reduce the step to save debug time
     for i in trange(len(sigmas) - 1, disable=not show_progress):
+    # for i in trange(1, disable=not show_progress):
         logger.info(f'step: {i}')
         if sigmas[i] == float('inf'):
             # Euler method

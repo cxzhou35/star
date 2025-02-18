@@ -88,19 +88,22 @@ def save_video(video, save_dir, file_name, fps=16.0):
     output_path = os.path.join(save_dir, file_name)
     images = [(img.numpy()).astype('uint8') for img in video]
     temp_dir = tempfile.mkdtemp()
-    
+
     for fid, frame in enumerate(images):
         tpth = os.path.join(temp_dir, '%06d.png' % (fid + 1))
         cv2.imwrite(tpth, frame[:, :, ::-1])
-    
+
     tmp_path = os.path.join(save_dir, 'tmp.mp4')
+    # cmd = f'ffmpeg -y -f image2 -framerate {fps} -i {temp_dir}/%06d.png \
+    #  -vcodec libx264 -preset ultrafast -crf 0 -pix_fmt yuv420p {tmp_path}'
+    # TODO: change crf to 10 for better compression
     cmd = f'ffmpeg -y -f image2 -framerate {fps} -i {temp_dir}/%06d.png \
-     -vcodec libx264 -preset ultrafast -crf 0 -pix_fmt yuv420p {tmp_path}'
-    
+     -vcodec libx264 -preset ultrafast -crf 10 -pix_fmt yuv420p {tmp_path}'
+
     status, output = subprocess.getstatusoutput(cmd)
     if status != 0:
         logger.error('Save Video Error with {}'.format(output))
-    
+
     os.system(f'rm -rf {temp_dir}')
     os.rename(tmp_path, output_path)
 
