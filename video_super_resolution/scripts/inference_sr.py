@@ -18,7 +18,6 @@ from inference_utils import *
 
 logger = get_logger()
 
-
 class STAR():
     def __init__(self,
                  result_dir='./results/',
@@ -64,7 +63,7 @@ class STAR():
         logger.info('original input resolution: {}'.format((h, w)))
 
         # patchify the video
-        video_data_patched = rearrange(video_data, 'f c (h_p p1) (w_p p2) -> f c (p1 p2) h_p w_p', h_p=self.patch_size, w_p=self.patch_size)
+        video_data_patched = rearrange(video_data, 'f c (p1 h_p) (p2 w_p) -> f c (p1 p2) h_p w_p', h_p=self.patch_size, w_p=self.patch_size)
         _, _, p_n, h_p, w_p = video_data_patched.shape
         logger.info('patch input resolution: {}'.format((h_p, w_p)))
 
@@ -88,21 +87,22 @@ class STAR():
 
             output = tensor2vid(output)
             output = adain_color_fix(output, video_data)
-            file_name = f'crop_patch_{i}.mp4'
-            save_video(output, self.result_dir, file_name, fps=input_fps)
+            # file_name = f'crop_patch_{i}.mp4'
+            # save_video(output, self.result_dir, file_name, fps=input_fps)
             output_list.append(output)
 
         # merge the video
-        output = torch.cat(output_list, dim=0)
-        __import__('ipdb').set_trace()
+        output_tensor = rearrange(output_list, 'b f h w c -> b f h w c')
+        output = rearrange(output_tensor, '(p1 p2) f h_p w_p c -> f (p1 h_p) (p2 w_p) c', p1=h//h_p, p2=w//w_p)
 
-        output = tensor2vid(output)
-
-        # Using color fix
-        output = adain_color_fix(output, video_data)
+        # TODO: smooth the patch boundary
+        # output = self.smooth_patch_boundary(output, patch_size=self.patch_size, overlap=0.5)
 
         save_video(output, self.result_dir, self.file_name, fps=input_fps)
         return os.path.join(self.result_dir, self.file_name)
+
+    def smooth_patch_boundary(self, video_data, patch_size=256, overlap=0.5):
+        return video_data
 
 
 def parse_args():
